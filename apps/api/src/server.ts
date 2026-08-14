@@ -18,8 +18,9 @@ import { conversationsRoutes } from './modules/conversations/conversations.route
 import { questionsRoutes } from './modules/questions/questions.routes';
 import { quizzesRoutes } from './modules/quizzes/quizzes.routes';
 import { analyticsRoutes } from './modules/analytics/analytics.routes';
+import path from 'path';
 
-dotenv.config({ path: '../../.env' });
+dotenv.config({ path: path.join(__dirname, '../../../.env') });
 
 const PORT = parseInt(process.env.PORT || '4000', 10);
 const HOST = process.env.HOST || '0.0.0.0';
@@ -65,7 +66,7 @@ export async function buildServer() {
       serverAdapter,
     });
     serverAdapter.setBasePath('/admin/queues');
-    app.register(serverAdapter.registerPlugin(), { prefix: '/admin/queues' });
+    app.register(serverAdapter.registerPlugin());
   }
 
   // Health check endpoint
@@ -98,7 +99,7 @@ export async function buildServer() {
         ip: request.ip,
       }
     }, error.message);
-    
+
     reply.status(error.statusCode || 500).send(
       formatErrorResponse(
         error.code || 'INTERNAL_SERVER_ERROR',
