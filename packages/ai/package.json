@@ -1,0 +1,19 @@
+{
+  "name": "@exam-ai/ai",
+  "version": "0.1.0",
+  "private": true,
+  "main": "./dist/index.js",
+  "module": "./dist/index.mjs",
+  "types": "./dist/index.d.ts",
+  "scripts": {
+    "build": "tsc"
+  },
+  "dependencies": {
+    "@anthropic-ai/sdk": "^0.117.1",
+    "@exam-ai/shared": "*",
+    "openai": "^4.47.1"
+  },
+  "devDependencies": {
+    "typescript": "^5.4.5"
+  }
+}

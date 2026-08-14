@@ -1,0 +1,355 @@
+generator client {
+  provider        = "prisma-client-js"
+  previewFeatures = ["postgresqlExtensions"]
+}
+
+datasource db {
+  provider   = "postgresql"
+  url        = env("DATABASE_URL")
+  extensions = [pgvector(map: "vector")]
+}
+
+enum DocumentType {
+  LECTURE
+  PAST_QUESTION
+  QUESTION_ANSWER
+  OTHER
+}
+
+enum DocumentStatus {
+  UPLOADED
+  QUEUED
+  PROCESSING
+  INDEXING
+  READY
+  FAILED
+}
+
+enum MessageRole {
+  USER
+  ASSISTANT
+  SYSTEM
+}
+
+enum QuestionType {
+  MCQ
+  SHORT_ANSWER
+  ESSAY
+  CALCULATION
+  TRUE_FALSE
+  OTHER
+}
+
+enum AnswerStyle {
+  SHORT
+  EXAM
+  DETAILED
+  STEP_BY_STEP
+}
+
+enum QuizAttemptStatus {
+  IN_PROGRESS
+  COMPLETED
+}
+
+model User {
+  id             String            @id @default(uuid())
+  email          String            @unique
+  name           String
+  passwordHash   String
+  createdAt      DateTime          @default(now())
+  updatedAt      DateTime          @updatedAt
+  preferredAI    String            @default("OPENAI")
+  courses        Course[]
+  documents      Document[]
+  conversations  Conversation[]
+  answers        GeneratedAnswer[]
+  studentAnswers StudentAnswer[]
+  aiUsages       AIUsage[]
+  quizzes        Quiz[]
+  quizAttempts   QuizAttempt[]
+
+  @@map("users")
+}
+
+model Course {
+  id            String          @id @default(uuid())
+  userId        String
+  name          String
+  description   String?
+  academicYear  String?
+  createdAt     DateTime        @default(now())
+  updatedAt     DateTime        @updatedAt
+  user          User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+  documents     Document[]
+  chunks        DocumentChunk[]
+  conversations Conversation[]
+  questions     Question[]
+  quizzes       Quiz[]
+
+  @@index([userId])
+  @@map("courses")
+}
+
+model Document {
+  id                String            @id @default(uuid())
+  courseId          String
+  userId            String
+  name              String
+  originalFilename  String
+  type              DocumentType      @default(LECTURE)
+  mimeType          String
+  storageKey        String
+  status            DocumentStatus    @default(UPLOADED)
+  pageCount         Int?
+  processingError   String?
+  processingVersion String?
+  createdAt         DateTime          @default(now())
+  updatedAt         DateTime          @updatedAt
+  course            Course            @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  user              User              @relation(fields: [userId], references: [id], onDelete: Cascade)
+  pages             DocumentPage[]
+  chunks            DocumentChunk[]
+  questions         Question[]
+  citations         MessageCitation[]
+
+  @@index([courseId])
+  @@index([userId])
+  @@index([status])
+  @@map("documents")
+}
+
+model DocumentPage {
+  id         String            @id @default(uuid())
+  documentId String
+  pageNumber Int
+  content    String
+  createdAt  DateTime          @default(now())
+  document   Document          @relation(fields: [documentId], references: [id], onDelete: Cascade)
+  chunks     DocumentChunk[]
+  citations  MessageCitation[]
+
+  @@unique([documentId, pageNumber])
+  @@index([documentId])
+  @@map("document_pages")
+}
+
+model DocumentChunk {
+  id               String                       @id @default(uuid())
+  documentId       String
+  pageId           String
+  courseId         String
+  pageNumber       Int
+  sectionTitle     String?
+  content          String
+  tokenCount       Int
+  embedding        Unsupported("vector(1536)")?
+  embeddingModel   String?
+  embeddingVersion String?
+  createdAt        DateTime                     @default(now())
+  document         Document                     @relation(fields: [documentId], references: [id], onDelete: Cascade)
+  page             DocumentPage                 @relation(fields: [pageId], references: [id], onDelete: Cascade)
+  course           Course                       @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  citations        MessageCitation[]
+
+  @@index([courseId])
+  @@index([documentId])
+  @@index([pageId])
+  @@map("document_chunks")
+}
+
+model Conversation {
+  id        String                @id @default(uuid())
+  userId    String
+  courseId  String
+  title     String
+  createdAt DateTime              @default(now())
+  updatedAt DateTime              @updatedAt
+  user      User                  @relation(fields: [userId], references: [id], onDelete: Cascade)
+  course    Course                @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  messages  ConversationMessage[]
+
+  @@index([userId])
+  @@index([courseId])
+  @@map("conversations")
+}
+
+model ConversationMessage {
+  id             String            @id @default(uuid())
+  conversationId String
+  role           MessageRole
+  content        String
+  metadata       Json?
+  createdAt      DateTime          @default(now())
+  conversation   Conversation      @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+  citations      MessageCitation[]
+
+  @@index([conversationId])
+  @@map("conversation_messages")
+}
+
+model MessageCitation {
+  id             String              @id @default(uuid())
+  messageId      String
+  documentId     String
+  pageId         String
+  chunkId        String
+  pageNumber     Int
+  excerpt        String
+  relevanceScore Float
+  createdAt      DateTime            @default(now())
+  message        ConversationMessage @relation(fields: [messageId], references: [id], onDelete: Cascade)
+  document       Document            @relation(fields: [documentId], references: [id], onDelete: Cascade)
+  page           DocumentPage        @relation(fields: [pageId], references: [id], onDelete: Cascade)
+  chunk          DocumentChunk       @relation(fields: [chunkId], references: [id], onDelete: Cascade)
+
+  @@index([messageId])
+  @@index([documentId])
+  @@map("message_citations")
+}
+
+model Question {
+  id             String            @id @default(uuid())
+  courseId       String
+  documentId     String?
+  questionNumber String
+  content        String
+  type           QuestionType      @default(SHORT_ANSWER)
+  marks          Int?
+  metadata       Json?
+  createdAt      DateTime          @default(now())
+  course         Course            @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  document       Document?         @relation(fields: [documentId], references: [id], onDelete: SetNull)
+  answers        GeneratedAnswer[]
+  studentAnswers StudentAnswer[]
+
+  @@index([courseId])
+  @@index([documentId])
+  @@map("questions")
+}
+
+model GeneratedAnswer {
+  id          String      @id @default(uuid())
+  questionId  String
+  userId      String
+  answer      String
+  answerStyle AnswerStyle @default(EXAM)
+  confidence  Float?
+  createdAt   DateTime    @default(now())
+  question    Question    @relation(fields: [questionId], references: [id], onDelete: Cascade)
+  user        User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([questionId])
+  @@index([userId])
+  @@map("generated_answers")
+}
+
+model StudentAnswer {
+  id              String   @id @default(uuid())
+  questionId      String
+  userId          String
+  answer          String
+  score           Float
+  maxScore        Float
+  strengths       Json?
+  missingConcepts Json?
+  feedback        String
+  suggestedAnswer String
+  createdAt       DateTime @default(now())
+  question        Question @relation(fields: [questionId], references: [id], onDelete: Cascade)
+  user            User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([questionId])
+  @@index([userId])
+  @@map("student_answers")
+}
+
+model AIUsage {
+  id            String   @id @default(uuid())
+  userId        String
+  operation     String
+  model         String
+  inputTokens   Int
+  outputTokens  Int
+  estimatedCost Float
+  createdAt     DateTime @default(now())
+  user          User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@map("ai_usages")
+}
+
+model Quiz {
+  id          String         @id @default(uuid())
+  courseId    String
+  userId      String
+  title            String
+  description      String?
+  isMockExam       Boolean        @default(false)
+  timeLimitMinutes Int?
+  createdAt        DateTime       @default(now())
+  updatedAt   DateTime       @updatedAt
+  course      Course         @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  user        User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  questions   QuizQuestion[]
+  attempts    QuizAttempt[]
+
+  @@index([courseId])
+  @@index([userId])
+  @@map("quizzes")
+}
+
+model QuizQuestion {
+  id            String              @id @default(uuid())
+  quizId        String
+  content       String
+  type          QuestionType
+  options       Json?
+  correctOption String?
+  explanation   String?
+  topic         String?
+  marks         Int                 @default(1)
+  createdAt     DateTime            @default(now())
+  quiz          Quiz                @relation(fields: [quizId], references: [id], onDelete: Cascade)
+  answers       QuizAttemptAnswer[]
+
+  @@index([quizId])
+  @@map("quiz_questions")
+}
+
+model QuizAttempt {
+  id          String              @id @default(uuid())
+  quizId      String
+  userId      String
+  score       Float?
+  maxScore    Float?
+  status      QuizAttemptStatus   @default(IN_PROGRESS)
+  startedAt   DateTime            @default(now())
+  completedAt DateTime?
+  lastSavedAt DateTime?
+  autosaveData Json?
+  quiz        Quiz                @relation(fields: [quizId], references: [id], onDelete: Cascade)
+  user        User                @relation(fields: [userId], references: [id], onDelete: Cascade)
+  answers     QuizAttemptAnswer[]
+
+  @@index([quizId])
+  @@index([userId])
+  @@map("quiz_attempts")
+}
+
+model QuizAttemptAnswer {
+  id             String       @id @default(uuid())
+  attemptId      String
+  questionId     String
+  providedAnswer String
+  isCorrect      Boolean?
+  scoreAwarded   Float?
+  feedback       String?
+  createdAt      DateTime     @default(now())
+  attempt        QuizAttempt  @relation(fields: [attemptId], references: [id], onDelete: Cascade)
+  question       QuizQuestion @relation(fields: [questionId], references: [id], onDelete: Cascade)
+
+  @@index([attemptId])
+  @@index([questionId])
+  @@map("quiz_attempt_answers")
+}

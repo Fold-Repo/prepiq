@@ -1,0 +1,21 @@
+{
+  "name": "@exam-ai/database",
+  "version": "0.1.0",
+  "private": true,
+  "main": "./dist/index.js",
+  "module": "./dist/index.mjs",
+  "types": "./dist/index.d.ts",
+  "scripts": {
+    "build": "tsc",
+    "db:generate": "prisma generate",
+    "db:push": "prisma db push",
+    "db:migrate": "prisma migrate dev"
+  },
+  "dependencies": {
+    "@prisma/client": "^5.13.0"
+  },
+  "devDependencies": {
+    "prisma": "^5.13.0",
+    "typescript": "^5.4.5"
+  }
+}

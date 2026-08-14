@@ -1,0 +1,24 @@
+{
+  "name": "exam-ai-monorepo",
+  "private": true,
+  "version": "0.1.0",
+  "workspaces": [
+    "apps/*",
+    "packages/*",
+    "workers/*"
+  ],
+  "scripts": {
+    "build": "npm run build --workspaces --if-present",
+    "dev": "npm run dev --workspaces --if-present",
+    "lint": "npm run lint --workspaces --if-present",
+    "test": "npm run test --workspaces --if-present",
+    "db:generate": "npx dotenv-cli -e .env -- npm run db:generate --workspace=@exam-ai/database",
+    "db:push": "npx dotenv-cli -e .env -- npm run db:push --workspace=@exam-ai/database"
+  },
+  "devDependencies": {
+    "typescript": "^5.4.5"
+  },
+  "overrides": {
+    "@fastify/view": "^9.1.0"
+  }
+}

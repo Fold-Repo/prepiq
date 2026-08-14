@@ -1,0 +1,58 @@
+version: '3.8'
+
+services:
+  db:
+    image: postgres:15-alpine
+    environment:
+      POSTGRES_USER: examai
+      POSTGRES_PASSWORD: production_password
+      POSTGRES_DB: exam_ai_db
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    restart: unless-stopped
+
+  redis:
+    image: redis:alpine
+    ports:
+      - "6379:6379"
+    volumes:
+      - redisdata:/data
+    restart: unless-stopped
+
+  api:
+    build:
+      context: .
+      dockerfile: apps/api/Dockerfile
+    environment:
+      - NODE_ENV=production
+      - PORT=4000
+      - HOST=0.0.0.0
+      - DATABASE_URL=postgresql://examai:production_password@db:5432/exam_ai_db
+      - REDIS_URL=redis://redis:6379
+      - JWT_SECRET=${JWT_SECRET:-super-secret-production-key}
+      - OPENAI_API_KEY=${OPENAI_API_KEY}
+    ports:
+      - "4000:4000"
+    depends_on:
+      - db
+      - redis
+    restart: unless-stopped
+
+  web:
+    build:
+      context: .
+      dockerfile: apps/web/Dockerfile
+    environment:
+      - NODE_ENV=production
+      - NEXT_PUBLIC_API_URL=http://api:4000/api/v1
+    ports:
+      - "3000:3000"
+    depends_on:
+      - api
+    restart: unless-stopped
+
+volumes:
+  pgdata:
+  redisdata:
