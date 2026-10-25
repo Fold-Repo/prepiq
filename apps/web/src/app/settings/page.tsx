@@ -98,7 +98,7 @@ export default function SettingsPage() {
           </div>
           
           <div className="p-6 space-y-4">
-            <label className={\`relative flex cursor-pointer rounded-xl border p-4 shadow-sm focus:outline-none \${preferredAI === 'OPENAI' ? 'border-brand-500 ring-1 ring-brand-500 bg-brand-50' : 'border-slate-200 hover:border-brand-200'}\`}>
+            <label className={`relative flex cursor-pointer rounded-xl border p-4 shadow-sm focus:outline-none \${preferredAI === 'OPENAI' ? 'border-brand-500 ring-1 ring-brand-500 bg-brand-50' : 'border-slate-200 hover:border-brand-200'}`}>
               <input
                 type="radio"
                 name="ai-provider"
@@ -121,12 +121,12 @@ export default function SettingsPage() {
                 </span>
               </span>
               <span
-                className={\`pointer-events-none absolute -inset-px rounded-xl border-2 \${preferredAI === 'OPENAI' ? 'border border-brand-500' : 'border-transparent'}\`}
+                className={`pointer-events-none absolute -inset-px rounded-xl border-2 \${preferredAI === 'OPENAI' ? 'border border-brand-500' : 'border-transparent'}`}
                 aria-hidden="true"
               />
             </label>
 
-            <label className={\`relative flex cursor-pointer rounded-xl border p-4 shadow-sm focus:outline-none \${preferredAI === 'ANTHROPIC' ? 'border-brand-500 ring-1 ring-brand-500 bg-brand-50' : 'border-slate-200 hover:border-brand-200'}\`}>
+            <label className={`relative flex cursor-pointer rounded-xl border p-4 shadow-sm focus:outline-none \${preferredAI === 'ANTHROPIC' ? 'border-brand-500 ring-1 ring-brand-500 bg-brand-50' : 'border-slate-200 hover:border-brand-200'}`}>
               <input
                 type="radio"
                 name="ai-provider"
@@ -149,7 +149,7 @@ export default function SettingsPage() {
                 </span>
               </span>
               <span
-                className={\`pointer-events-none absolute -inset-px rounded-xl border-2 \${preferredAI === 'ANTHROPIC' ? 'border border-brand-500' : 'border-transparent'}\`}
+                className={`pointer-events-none absolute -inset-px rounded-xl border-2 \${preferredAI === 'ANTHROPIC' ? 'border border-brand-500' : 'border-transparent'}`}
                 aria-hidden="true"
               />
             </label>

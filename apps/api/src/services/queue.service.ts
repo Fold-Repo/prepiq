@@ -6,7 +6,7 @@ export class QueueService {
   private documentQueue: Queue<ProcessDocumentPayload> | null = null;
 
   constructor() {
-    const redisUrl = process.env.REDIS_URL || 'redis://localhost:6379';
+    const redisUrl = process.env.REDIS_URL || 'redis://localhost:6382';
     try {
       const connection = new Redis(redisUrl, { maxRetriesPerRequest: null });
       this.documentQueue = new Queue<ProcessDocumentPayload>(QueueName.DOCUMENT_PROCESSING, {

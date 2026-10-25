@@ -109,18 +109,18 @@ export async function retrieveCourseChunks(input: RetrieveChunksInput): Promise<
   }>>`
     SELECT 
       dc.id AS "chunkId",
-      dc.document_id AS "documentId",
+      dc."documentId" AS "documentId",
       d.name AS "documentName",
-      dc.page_id AS "pageId",
-      dc.page_number AS "pageNumber",
-      dc.section_title AS "sectionTitle",
+      dc."pageId" AS "pageId",
+      dc."pageNumber" AS "pageNumber",
+      dc."sectionTitle" AS "sectionTitle",
       dc.content AS "content",
       (1 - (dc.embedding <=> ${vectorStr}::vector)) AS "similarityScore"
     FROM document_chunks dc
-    JOIN documents d ON d.id = dc.document_id
-    JOIN courses c ON c.id = dc.course_id
-    WHERE dc.course_id = ${input.courseId}
-      AND c.user_id = ${input.userId}
+    JOIN documents d ON d.id = dc."documentId"
+    JOIN courses c ON c.id = dc."courseId"
+    WHERE dc."courseId" = ${input.courseId}
+      AND c."userId" = ${input.userId}
       AND dc.embedding IS NOT NULL
     ORDER BY dc.embedding <=> ${vectorStr}::vector ASC
     LIMIT ${limit};

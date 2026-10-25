@@ -25,24 +25,34 @@ export class StorageService {
     const accountId = process.env.R2_ACCOUNT_ID;
     const accessKeyId = process.env.R2_ACCESS_KEY_ID;
     const secretAccessKey = process.env.R2_SECRET_ACCESS_KEY;
+    const endpoint = process.env.R2_ENDPOINT;
+
+    console.log(`[StorageService] R2_ACCOUNT_ID: ${accountId ? '✓ set' : '✗ MISSING'}`);
+    console.log(`[StorageService] R2_ACCESS_KEY_ID: ${accessKeyId ? '✓ set' : '✗ MISSING'}`);
+    console.log(`[StorageService] R2_SECRET_ACCESS_KEY: ${secretAccessKey ? '✓ set' : '✗ MISSING'}`);
+    console.log(`[StorageService] R2_ENDPOINT: ${endpoint || '(default)'}`);
+    console.log(`[StorageService] R2_BUCKET_NAME: ${this.bucketName}`);
 
     if (accessKeyId && secretAccessKey && accountId) {
-      const endpoint = process.env.R2_ENDPOINT || `https://${accountId}.r2.cloudflarestorage.com`;
+      const resolvedEndpoint = endpoint || `https://${accountId}.r2.cloudflarestorage.com`;
+      console.log(`[StorageService] Mode: R2/S3 → ${resolvedEndpoint}`);
       this.s3Client = new S3Client({
         region: 'auto',
-        endpoint,
+        endpoint: resolvedEndpoint,
         credentials: {
           accessKeyId,
           secretAccessKey,
         },
       });
     } else {
+      console.log(`[StorageService] Mode: LOCAL (${this.localStorageDir})`);
       this.isLocalStorage = true;
       if (!fs.existsSync(this.localStorageDir)) {
         fs.mkdirSync(this.localStorageDir, { recursive: true });
       }
     }
   }
+
 
   async uploadFile(key: string, buffer: Buffer, mimeType: string): Promise<string> {
     if (this.isLocalStorage || !this.s3Client) {
@@ -64,9 +74,15 @@ export class StorageService {
   }
 
   async downloadFile(key: string): Promise<Buffer> {
-    if (this.isLocalStorage || !this.s3Client) {
-      const localFilePath = path.join(this.localStorageDir, key.replace(/\//g, '_'));
+    // Always check local storage first — handles files uploaded before R2 was configured
+    const localFilePath = path.join(this.localStorageDir, key.replace(/\//g, '_'));
+    if (fs.existsSync(localFilePath)) {
+      console.log(`[StorageService] Found file locally: ${localFilePath}`);
       return fs.promises.readFile(localFilePath);
+    }
+
+    if (this.isLocalStorage || !this.s3Client) {
+      throw new Error(`File not found locally for key: ${key}`);
     }
 
     const command = new GetObjectCommand({
@@ -81,10 +97,11 @@ export class StorageService {
     return Buffer.from(byteArray);
   }
 
+
   async getSignedDownloadUrl(key: string, expiresInSeconds: number = 900): Promise<string> {
     if (this.isLocalStorage || !this.s3Client) {
-      // Local fallback file URL path
-      return `/uploads/${key.replace(/\//g, '_')}`;
+      const origin = (process.env.API_PUBLIC_ORIGIN || 'http://localhost:4000').replace(/\/$/, '');
+      return `${origin}/uploads/${key.replace(/\//g, '_')}`;
     }
 
     const command = new GetObjectCommand({

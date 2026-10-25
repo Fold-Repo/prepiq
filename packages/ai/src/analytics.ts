@@ -19,8 +19,17 @@ Your task is to:
 
   const userPrompt = `Student Performance Data:\n\n${performanceData}`;
 
-  return provider.generateStructured<StudyRecommendationsResult>({
+  const result = await provider.generateStructured<StudyRecommendationsResult>({
     systemPrompt,
     userPrompt,
   });
+
+  return {
+    readinessScore: Number.isFinite(Number(result?.readinessScore))
+      ? Math.max(0, Math.min(100, Math.round(Number(result.readinessScore))))
+      : 0,
+    recommendations: Array.isArray(result?.recommendations)
+      ? result.recommendations.filter((item): item is string => typeof item === 'string' && item.trim().length > 0)
+      : [],
+  };
 }

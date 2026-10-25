@@ -5,8 +5,8 @@ export interface CourseDocument {
   id: string;
   name: string;
   originalFilename: string;
-  type: 'LECTURE' | 'PAST_QUESTION' | 'QUESTION_ANSWER' | 'OTHER';
-  status: 'UPLOADED' | 'QUEUED' | 'PROCESSING' | 'INDEXING' | 'READY' | 'FAILED';
+  type: 'LECTURE' | 'PAST_QUESTION' | 'QUESTION_ANSWER' | 'SYLLABUS' | 'OTHER';
+  status: 'UPLOADED' | 'QUEUED' | 'PROCESSING' | 'INDEXING' | 'AWAITING_RANGE' | 'READY' | 'FAILED';
   pageCount?: number | null;
   createdAt: string;
 }

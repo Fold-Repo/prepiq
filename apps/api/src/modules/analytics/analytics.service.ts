@@ -67,11 +67,18 @@ export class AnalyticsService {
       const performanceString = topicPerformance.map(t => `${t.topic}: ${t.accuracy}% (${t.scoreAwarded}/${t.maxScore} marks)`).join('\n');
       try {
         const aiAnalysis = await generateStudyRecommendations(performanceString);
-        readinessScore = aiAnalysis.readinessScore;
-        recommendations = aiAnalysis.recommendations;
+        const score = Number(aiAnalysis?.readinessScore);
+        readinessScore = Number.isFinite(score)
+          ? Math.max(0, Math.min(100, Math.round(score)))
+          : Math.round(topicPerformance.reduce((acc, t) => acc + t.accuracy, 0) / topicPerformance.length);
+        recommendations = Array.isArray(aiAnalysis?.recommendations)
+          ? aiAnalysis.recommendations.filter((item): item is string => typeof item === 'string' && item.trim().length > 0)
+          : [];
+        if (recommendations.length === 0) {
+          recommendations = ['Continue practicing your weak topics to improve your score.'];
+        }
       } catch (err) {
         console.error('Failed to generate AI recommendations:', err);
-        // Fallback simple calculation
         readinessScore = Math.round(topicPerformance.reduce((acc, t) => acc + t.accuracy, 0) / topicPerformance.length);
         recommendations = ['Continue practicing your weak topics to improve your score.'];
       }

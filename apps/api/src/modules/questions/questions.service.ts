@@ -1,7 +1,8 @@
 import { QuestionsRepository } from './questions.repository';
 import { CoursesService } from '../courses/courses.service';
-import { QuestionType, AnswerStyle } from '@exam-ai/database';
+import { AnswerStyle } from '@exam-ai/database';
 import { generateExamAnswerQuery, evaluateStudentAnswerQuery } from '@exam-ai/rag';
+import { CreateQuestionInput, UpdateQuestionInput } from '@exam-ai/validation';
 
 export class QuestionsService {
   private repository: QuestionsRepository;
@@ -12,9 +13,24 @@ export class QuestionsService {
     this.coursesService = new CoursesService();
   }
 
-  async getCourseQuestions(courseId: string, userId: string) {
+  async getCourseQuestions(
+    courseId: string,
+    userId: string,
+    filters: {
+      documentId?: string;
+      pageNumber?: number;
+      sectionId?: string;
+      topicId?: string;
+      search?: string;
+    } = {}
+  ) {
     await this.coursesService.getCourseDetails(courseId, userId);
-    return this.repository.findByCourseIdAndUserId(courseId, userId);
+    return this.repository.findByCourseIdAndUserId(courseId, userId, filters);
+  }
+
+  async createQuestion(courseId: string, userId: string, input: CreateQuestionInput) {
+    await this.coursesService.getCourseDetails(courseId, userId);
+    return this.repository.create({ ...input, courseId });
   }
 
   async getQuestionDetails(questionId: string, userId: string) {
@@ -87,16 +103,7 @@ export class QuestionsService {
     return savedEvaluation;
   }
 
-  async updateQuestion(
-    questionId: string,
-    userId: string,
-    input: {
-      questionNumber?: string;
-      content?: string;
-      marks?: number;
-      type?: QuestionType;
-    }
-  ) {
+  async updateQuestion(questionId: string, userId: string, input: UpdateQuestionInput) {
     await this.getQuestionDetails(questionId, userId);
     return this.repository.update(questionId, input);
   }

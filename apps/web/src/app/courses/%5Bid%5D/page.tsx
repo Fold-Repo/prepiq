@@ -110,8 +110,7 @@ export default function CourseDetailPage() {
     } catch (err) {
       console.error('Failed to load course:', err);
       router.push('/courses');
-    } flex-1
-    finally {
+    } finally {
       setLoading(false);
     }
   }, [router, activeConversationId]);

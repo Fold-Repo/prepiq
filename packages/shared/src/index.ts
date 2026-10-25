@@ -18,6 +18,7 @@ export interface ProcessDocumentPayload {
   userId: string;
   storageKey: string;
   type: string;
+  forceIndex?: boolean;
 }
 
 export function formatErrorResponse(code: string, message: string, requestId?: string): ApiResponse {

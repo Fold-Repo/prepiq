@@ -125,3 +125,78 @@ export function chunkPageContent(
 
   return chunks;
 }
+
+export function isPageInContentRange(
+  pageNumber: number,
+  startPage?: number | null,
+  endPage?: number | null
+): boolean {
+  if (startPage != null && pageNumber < startPage) return false;
+  if (endPage != null && pageNumber > endPage) return false;
+  return true;
+}
+
+export function wordCount(text: string): number {
+  return text.trim() ? text.trim().split(/\s+/).length : 0;
+}
+
+function isLikelyHeading(line: string): boolean {
+  const trimmed = line.trim();
+  if (trimmed.length < 3 || trimmed.length > 80) return false;
+  if (trimmed.endsWith('.')) return false;
+  if (/^[\d\W]+$/.test(trimmed)) return false;
+  if (/^[a-z]/.test(trimmed) && !/^\d/.test(trimmed)) return false;
+  return true;
+}
+
+export interface DetectedSection {
+  title: string;
+  pageStart: number;
+  pageEnd: number;
+  order: number;
+}
+
+export function extractSectionsFromPages(pages: ExtractedPage[]): DetectedSection[] {
+  if (pages.length === 0) return [];
+
+  const headings: { title: string; page: number }[] = [];
+
+  for (const page of pages) {
+    const lines = page.content
+      .split('\n')
+      .map((line) => line.trim())
+      .filter(Boolean);
+
+    for (const line of lines) {
+      if (!isLikelyHeading(line)) continue;
+      const last = headings[headings.length - 1];
+      if (!last || last.title !== line) {
+        headings.push({ title: line, page: page.pageNumber });
+      }
+      break;
+    }
+  }
+
+  const lastPage = pages[pages.length - 1].pageNumber;
+
+  if (headings.length === 0) {
+    return [
+      {
+        title: 'Content',
+        pageStart: pages[0].pageNumber,
+        pageEnd: lastPage,
+        order: 0,
+      },
+    ];
+  }
+
+  return headings.map((heading, index) => {
+    const next = headings[index + 1];
+    return {
+      title: heading.title,
+      pageStart: heading.page,
+      pageEnd: next ? Math.max(heading.page, next.page - 1) : lastPage,
+      order: index,
+    };
+  });
+}

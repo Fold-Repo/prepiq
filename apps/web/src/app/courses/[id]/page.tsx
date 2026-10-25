@@ -35,6 +35,7 @@ import {
   StudentAnswerEvaluation
 } from '@/services/questions';
 import { UploadDocumentModal } from '@/components/documents/UploadDocumentModal';
+import { McqOptions, AnswerSourceBadge } from '@/components/questions/McqOptions';
 import {
   Sparkles,
   BookOpen,
@@ -398,6 +399,13 @@ export default function CourseDetailPage() {
             <span className="capitalize">{status.toLowerCase()}</span>
           </span>
         );
+      case 'AWAITING_RANGE':
+        return (
+          <span className="inline-flex items-center space-x-1 text-xs font-semibold text-indigo-700 bg-indigo-50 border border-indigo-200 px-2.5 py-1 rounded-full">
+            <Clock className="w-3.5 h-3.5 text-indigo-600" />
+            <span>Set page range</span>
+          </span>
+        );
       case 'FAILED':
         return (
           <span className="inline-flex items-center space-x-1 text-xs font-semibold text-red-700 bg-red-50 border border-red-200 px-2.5 py-1 rounded-full">
@@ -486,6 +494,14 @@ export default function CourseDetailPage() {
             <FileText className="w-4 h-4" />
             <span>Documents ({documents.length})</span>
           </button>
+
+          <Link
+            href={`/courses/${courseId}/syllabus`}
+            className="py-3.5 text-sm font-semibold border-b-2 border-transparent text-slate-500 hover:text-slate-800 transition flex items-center space-x-2"
+          >
+            <BookMarked className="w-4 h-4" />
+            <span>Syllabus</span>
+          </Link>
 
           <button
             onClick={() => setActiveTab('chat')}
@@ -582,8 +598,15 @@ export default function CourseDetailPage() {
             <div className="flex items-center justify-between">
               <div>
                 <h2 className="text-xl font-bold text-slate-900">Course Materials & PDFs</h2>
-                <p className="text-xs text-slate-500 mt-0.5">Upload lectures, past papers, and solutions for RAG ingestion.</p>
+                <p className="text-xs text-slate-500 mt-0.5">Upload lectures, past papers, syllabi, and solutions. Manage extracted pages and questions per document.</p>
               </div>
+              <div className="flex items-center gap-2">
+                <Link
+                  href={`/courses/${courseId}/question-bank`}
+                  className="border border-slate-200 text-slate-700 font-semibold px-4 py-2.5 rounded-xl text-sm hover:bg-slate-50"
+                >
+                  Question bank
+                </Link>
               <button
                 onClick={() => setIsUploadModalOpen(true)}
                 className="bg-brand-600 hover:bg-brand-700 text-white font-semibold px-4 py-2.5 rounded-xl shadow-sm transition flex items-center space-x-2 text-sm"
@@ -591,6 +614,7 @@ export default function CourseDetailPage() {
                 <Upload className="w-4 h-4" />
                 <span>Upload PDF Document</span>
               </button>
+              </div>
             </div>
 
             {documents.length === 0 ? (
@@ -632,6 +656,13 @@ export default function CourseDetailPage() {
                     </div>
 
                     <div className="flex items-center space-x-2 self-end sm:self-center">
+                      <Link
+                        href={`/courses/${courseId}/documents/${doc.id}`}
+                        className="flex items-center space-x-1 text-brand-700 hover:bg-brand-50 px-3 py-1.5 rounded-lg text-xs font-semibold transition"
+                      >
+                        <FileText className="w-3.5 h-3.5" />
+                        <span>Manage</span>
+                      </Link>
                       <button
                         onClick={() => handleOpenCitation(doc.id, 1)}
                         className="flex items-center space-x-1 text-slate-600 hover:text-brand-600 hover:bg-slate-100 px-3 py-1.5 rounded-lg text-xs font-semibold transition"
@@ -875,8 +906,15 @@ export default function CourseDetailPage() {
             <div className="flex justify-between items-center">
               <div>
                 <h2 className="text-xl font-bold text-slate-900">Exam Questions</h2>
-                <p className="text-xs text-slate-500 mt-0.5">Manage past paper questions and practice answering them.</p>
+                <p className="text-xs text-slate-500 mt-0.5">Practice extracted and manual exam questions.</p>
               </div>
+              <div className="flex items-center gap-2">
+                <Link
+                  href={`/courses/${courseId}/question-bank`}
+                  className="border border-slate-200 text-slate-700 font-semibold px-4 py-2.5 rounded-xl text-sm hover:bg-slate-50"
+                >
+                  Manage bank
+                </Link>
               <button
                 onClick={() => setIsAddingQuestion(true)}
                 className="bg-brand-600 hover:bg-brand-700 text-white font-semibold px-4 py-2.5 rounded-xl shadow-sm transition flex items-center space-x-2 text-sm"
@@ -884,6 +922,7 @@ export default function CourseDetailPage() {
                 <Plus className="w-4 h-4" />
                 <span>Add Question</span>
               </button>
+              </div>
             </div>
 
             {isAddingQuestion && (
@@ -956,7 +995,21 @@ export default function CourseDetailPage() {
                 <div className="bg-white rounded-2xl border border-slate-200 p-6 shadow-sm relative">
                   <span className="absolute top-6 right-6 bg-slate-100 text-slate-600 text-xs font-bold px-2 py-1 rounded-md">{activeQuestion.marks} Marks</span>
                   <h3 className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">Question</h3>
-                  <p className="text-slate-800 font-medium text-lg pr-20 leading-relaxed">{activeQuestion.content}</p>
+                  <p className="text-slate-800 font-medium text-lg pr-20 leading-relaxed whitespace-pre-wrap">{activeQuestion.content}</p>
+                  <McqOptions options={activeQuestion.options} correctOption={activeQuestion.correctOption} />
+                  {activeQuestion.officialAnswer && (
+                    <div className="mt-4 bg-emerald-50 border border-emerald-100 rounded-xl p-4">
+                      <div className="flex items-center justify-between mb-1">
+                        <span className="text-[11px] font-semibold uppercase tracking-wide text-emerald-700">
+                          {activeQuestion.correctOption
+                            ? `Answer: option ${activeQuestion.correctOption.toUpperCase()}`
+                            : 'Answer explanation'}
+                        </span>
+                        <AnswerSourceBadge source={activeQuestion.officialAnswerSource} />
+                      </div>
+                      <p className="text-sm text-emerald-950 leading-relaxed whitespace-pre-wrap">{activeQuestion.officialAnswer}</p>
+                    </div>
+                  )}
                 </div>
 
                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
@@ -1225,7 +1278,7 @@ export default function CourseDetailPage() {
               </div>
             </div>
 
-            {!analyticsData || analyticsData.topicPerformance.length === 0 ? (
+            {!analyticsData || (analyticsData.topicPerformance?.length ?? 0) === 0 ? (
               <div className="bg-white rounded-2xl border border-slate-200 p-12 text-center flex flex-col items-center justify-center">
                 <BarChart className="w-12 h-12 text-slate-300 mb-3" />
                 <h3 className="text-base font-bold text-slate-900 mb-1">No Data Available</h3>
@@ -1269,7 +1322,7 @@ export default function CourseDetailPage() {
 
                   <div className="bg-white rounded-2xl border border-slate-200 p-6 shadow-sm">
                     <h3 className="text-sm font-bold text-slate-500 uppercase tracking-wider mb-4 flex items-center"><Target className="w-4 h-4 mr-2" /> Top Strengths</h3>
-                    {analyticsData.strongTopics.length > 0 ? (
+                    {(analyticsData.strongTopics?.length ?? 0) > 0 ? (
                       <ul className="space-y-3">
                         {analyticsData.strongTopics.map(t => (
                           <li key={t.topic} className="flex justify-between items-center text-sm">
@@ -1285,7 +1338,7 @@ export default function CourseDetailPage() {
                   
                   <div className="bg-white rounded-2xl border border-slate-200 p-6 shadow-sm">
                     <h3 className="text-sm font-bold text-slate-500 uppercase tracking-wider mb-4 flex items-center"><TrendingUp className="w-4 h-4 mr-2 text-rose-500" /> Focus Areas</h3>
-                    {analyticsData.weakTopics.length > 0 ? (
+                    {(analyticsData.weakTopics?.length ?? 0) > 0 ? (
                       <ul className="space-y-3">
                         {analyticsData.weakTopics.map(t => (
                           <li key={t.topic} className="flex justify-between items-center text-sm">
@@ -1311,7 +1364,7 @@ export default function CourseDetailPage() {
                       </div>
                       <h3 className="text-lg font-bold">AI Study Recommendations</h3>
                     </div>
-                    {analyticsData.recommendations.length > 0 ? (
+                    {(analyticsData.recommendations?.length ?? 0) > 0 ? (
                       <ul className="space-y-3">
                         {analyticsData.recommendations.map((rec, i) => (
                           <li key={i} className="flex items-start space-x-3 bg-white/10 rounded-xl p-4">
@@ -1338,7 +1391,7 @@ export default function CourseDetailPage() {
                           <div className="w-full bg-slate-100 rounded-full h-2.5 overflow-hidden">
                             <div 
                               className={`h-2.5 rounded-full ${t.accuracy >= 80 ? 'bg-green-500' : t.accuracy < 60 ? 'bg-rose-500' : 'bg-brand-500'}`}
-                              style={{ width: \`\${Math.max(0, Math.min(100, t.accuracy))}%\` }}
+                              style={{ width: `${Math.max(0, Math.min(100, t.accuracy))}%` }}
                             ></div>
                           </div>
                         </div>

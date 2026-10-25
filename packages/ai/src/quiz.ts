@@ -34,21 +34,54 @@ export async function generateQuiz(options: QuizGenerationOptions): Promise<Gene
 ${topicFocus}
 
 Generate exactly ${count} questions. Include a mix of multiple-choice questions (MCQ) and short answer questions (SHORT_ANSWER).
-For MCQs, provide 4 options and clearly indicate the correct option (which MUST exactly match one of the options).
-For SHORT_ANSWER questions, do not provide options.
-Provide a brief explanation for the answer to each question.
-Categorize EVERY question with a specific sub-topic (e.g., "Mitochondria", "Newton's Second Law"). This goes in the \`topic\` field.`;
+For MCQs, provide 4 options and the correctOption MUST exactly match one of the options strings.
+For SHORT_ANSWER questions, set options to an empty array [] and omit correctOption.
+Provide a brief explanation for each answer. Categorize EVERY question with a specific sub-topic in the \`topic\` field.
+
+You MUST return valid JSON matching this exact schema:
+{
+  "title": "string",
+  "description": "string",
+  "questions": [
+    {
+      "content": "The full question text goes here",
+      "type": "MCQ" | "SHORT_ANSWER",
+      "options": ["option A", "option B", "option C", "option D"],
+      "correctOption": "option B",
+      "explanation": "string",
+      "topic": "string",
+      "marks": 1
+    }
+  ]
+}
+
+IMPORTANT: Use exactly the field name "content" for the question text, NOT "question" or "questionText".`;
 
   const userPrompt = `Course Material:\n\n${options.courseContext}`;
 
-  // Since we don't have a rigid runtime JSON schema validator strictly enforced by OpenAI API in older versions, 
-  // we rely on the prompt instructing it. Or we can just use generateStructured if we pass schema.
-  
-  return provider.generateStructured<GeneratedQuiz>({
+  const raw = await provider.generateStructured<any>({
     systemPrompt,
     userPrompt,
   });
+
+  // Normalize field names in case the model used alternatives
+  const questions: GeneratedQuizQuestion[] = (raw.questions || []).map((q: any) => ({
+    content: q.content ?? q.question ?? q.questionText ?? q.text ?? '',
+    type: q.type as 'MCQ' | 'SHORT_ANSWER',
+    options: q.options || [],
+    correctOption: q.correctOption ?? q.correct ?? q.answer ?? undefined,
+    explanation: q.explanation ?? q.rationale ?? '',
+    topic: q.topic ?? q.category ?? 'General',
+    marks: q.marks ?? q.points ?? 1,
+  }));
+
+  return {
+    title: raw.title || 'Generated Quiz',
+    description: raw.description || '',
+    questions,
+  };
 }
+
 
 export interface ShortAnswerGradingResult {
   score: number;

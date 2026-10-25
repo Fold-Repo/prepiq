@@ -21,6 +21,7 @@ export function EditQuestionModal({
 }: EditQuestionModalProps) {
   const [questionNumber, setQuestionNumber] = useState('');
   const [content, setContent] = useState('');
+  const [officialAnswer, setOfficialAnswer] = useState('');
   const [marks, setMarks] = useState<number | ''>('');
   const [type, setType] = useState<QuestionType>('SHORT_ANSWER');
   const [error, setError] = useState<string | null>(null);
@@ -30,6 +31,7 @@ export function EditQuestionModal({
     if (question) {
       setQuestionNumber(question.questionNumber || '');
       setContent(question.content || '');
+      setOfficialAnswer(question.officialAnswer || '');
       setMarks(question.marks ?? '');
       setType(question.type || 'SHORT_ANSWER');
     }
@@ -48,6 +50,7 @@ export function EditQuestionModal({
       await updateQuestion(token, question.id, {
         questionNumber,
         content,
+        officialAnswer: officialAnswer || null,
         marks: marks !== '' ? Number(marks) : undefined,
         type,
       });
@@ -145,6 +148,19 @@ export function EditQuestionModal({
               value={content}
               onChange={(e) => setContent(e.target.value)}
               placeholder="Question prompt..."
+              className="w-full px-4 py-3 rounded-xl border border-slate-200 focus:border-brand-500 focus:ring-2 focus:ring-brand-100 transition outline-none text-slate-900 text-sm resize-none"
+            />
+          </div>
+
+          <div>
+            <label className="block text-xs font-semibold text-slate-700 uppercase tracking-wider mb-2">
+              Official / correct answer
+            </label>
+            <textarea
+              rows={4}
+              value={officialAnswer}
+              onChange={(e) => setOfficialAnswer(e.target.value)}
+              placeholder="Model answer or mark scheme for this question..."
               className="w-full px-4 py-3 rounded-xl border border-slate-200 focus:border-brand-500 focus:ring-2 focus:ring-brand-100 transition outline-none text-slate-900 text-sm resize-none"
             />
           </div>

@@ -212,3 +212,4 @@ export function getAIProvider(providerType?: string): AIProvider {
 }
 export * from './quiz';
 export * from './analytics';
+export * from './extract';

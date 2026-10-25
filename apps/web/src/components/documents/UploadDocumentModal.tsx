@@ -21,6 +21,8 @@ export function UploadDocumentModal({
 }: UploadDocumentModalProps) {
   const [file, setFile] = useState<File | null>(null);
   const [docType, setDocType] = useState<DocumentType>('LECTURE');
+  const [startPage, setStartPage] = useState('');
+  const [endPage, setEndPage] = useState('');
   const [error, setError] = useState<string | null>(null);
   const [isUploading, setIsUploading] = useState(false);
 
@@ -50,7 +52,10 @@ export function UploadDocumentModal({
     setIsUploading(true);
 
     try {
-      await uploadDocument(token, courseId, file, docType);
+      await uploadDocument(token, courseId, file, docType, {
+        contentStartPage: startPage ? Number(startPage) : undefined,
+        contentEndPage: endPage ? Number(endPage) : undefined,
+      });
       onSuccess();
       onClose();
     } catch (err: any) {
@@ -100,6 +105,7 @@ export function UploadDocumentModal({
               <option value="LECTURE">Lecture Slides / Notes</option>
               <option value="PAST_QUESTION">Past Examination Paper</option>
               <option value="QUESTION_ANSWER">Question & Answer Reference</option>
+              <option value="SYLLABUS">Course Syllabus</option>
               <option value="OTHER">Other Study Material</option>
             </select>
           </div>
@@ -128,6 +134,38 @@ export function UploadDocumentModal({
                 </div>
               )}
             </div>
+          </div>
+
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <label className="block text-xs font-semibold text-slate-700 uppercase tracking-wider mb-2">
+                Content starts at page
+              </label>
+              <input
+                type="number"
+                min={1}
+                value={startPage}
+                onChange={(e) => setStartPage(e.target.value)}
+                placeholder="Optional"
+                className="w-full px-4 py-2.5 rounded-xl border border-slate-200 focus:border-brand-500 focus:ring-2 focus:ring-brand-100 transition outline-none text-slate-900 text-sm"
+              />
+            </div>
+            <div>
+              <label className="block text-xs font-semibold text-slate-700 uppercase tracking-wider mb-2">
+                Content ends at page
+              </label>
+              <input
+                type="number"
+                min={1}
+                value={endPage}
+                onChange={(e) => setEndPage(e.target.value)}
+                placeholder="Optional"
+                className="w-full px-4 py-2.5 rounded-xl border border-slate-200 focus:border-brand-500 focus:ring-2 focus:ring-brand-100 transition outline-none text-slate-900 text-sm"
+              />
+            </div>
+            <p className="col-span-2 text-[11px] text-slate-400">
+              Leave blank to extract all pages first, then pick a range in the document workspace. Past papers and syllabi wait for a start page before indexing.
+            </p>
           </div>
 
           <div className="pt-4 flex items-center justify-end space-x-3 border-t border-slate-100">

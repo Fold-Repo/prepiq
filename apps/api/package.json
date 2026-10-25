@@ -3,7 +3,7 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "dev": "tsc --watch & node --watch dist/server.js",
+    "dev": "node --env-file=../../.env --require tsx/cjs --watch src/server.ts",
     "build": "tsc",
     "start": "node dist/server.js"
   },
@@ -24,12 +24,15 @@
     "@fastify/multipart": "^8.2.0",
     "@fastify/rate-limit": "^9.1.0",
     "bcryptjs": "^2.4.3",
+    "bullmq": "^5.81.3",
     "dotenv": "^16.4.5",
-    "fastify": "^4.26.2"
+    "fastify": "^4.26.2",
+    "ioredis": "^5.3.2"
   },
   "devDependencies": {
     "@types/bcryptjs": "^2.4.6",
     "@types/node": "^20.12.7",
+    "tsx": "^4.23.12",
     "typescript": "^5.4.5"
   },
   "overrides": {

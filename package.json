@@ -10,6 +10,8 @@
   "scripts": {
     "build": "npm run build --workspaces --if-present",
     "dev": "npm run dev --workspaces --if-present",
+    "dev:web": "npm run dev --workspace=@exam-ai/web",
+    "dev:api": "npm run dev --workspace=@exam-ai/api",
     "lint": "npm run lint --workspaces --if-present",
     "test": "npm run test --workspaces --if-present",
     "db:generate": "npx dotenv-cli -e .env -- npm run db:generate --workspace=@exam-ai/database",

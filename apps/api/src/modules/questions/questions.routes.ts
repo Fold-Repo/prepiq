@@ -7,6 +7,7 @@ export async function questionsRoutes(fastify: FastifyInstance) {
   fastify.addHook('onRequest', fastify.authenticate);
 
   fastify.get('/courses/:courseId/questions', controller.listByCourse);
+  fastify.post('/courses/:courseId/questions', controller.create);
   fastify.get('/questions/:questionId', controller.getById);
   fastify.post('/questions/:questionId/answer', controller.generateAnswer);
   fastify.post('/questions/:questionId/evaluate', controller.evaluateStudentAnswer);

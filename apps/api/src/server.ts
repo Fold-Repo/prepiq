@@ -1,3 +1,8 @@
+import dotenv from 'dotenv';
+import path from 'path';
+// Load env vars BEFORE any other module imports trigger service constructors
+dotenv.config({ path: path.join(__dirname, '../../../.env') });
+
 import Fastify from 'fastify';
 import cors from '@fastify/cors';
 import fastifyJwt from '@fastify/jwt';
@@ -8,7 +13,6 @@ import { createBullBoard } from '@bull-board/api';
 import { BullMQAdapter } from '@bull-board/api/bullMQAdapter';
 import { FastifyAdapter } from '@bull-board/fastify';
 import { QueueService } from './services/queue.service';
-import dotenv from 'dotenv';
 import { formatSuccessResponse, formatErrorResponse } from '@exam-ai/shared';
 import authenticatePlugin from './plugins/authenticate';
 import { authRoutes } from './modules/auth/auth.routes';
@@ -18,9 +22,10 @@ import { conversationsRoutes } from './modules/conversations/conversations.route
 import { questionsRoutes } from './modules/questions/questions.routes';
 import { quizzesRoutes } from './modules/quizzes/quizzes.routes';
 import { analyticsRoutes } from './modules/analytics/analytics.routes';
-import path from 'path';
+import { syllabusRoutes } from './modules/syllabus/syllabus.routes';
+import fs from 'fs';
+import { createReadStream } from 'fs';
 
-dotenv.config({ path: path.join(__dirname, '../../../.env') });
 
 const PORT = parseInt(process.env.PORT || '4000', 10);
 const HOST = process.env.HOST || '0.0.0.0';
@@ -57,17 +62,16 @@ export async function buildServer() {
   await app.register(authenticatePlugin);
 
   // Setup Bull Board for Queue Monitoring
+  const serverAdapter = new FastifyAdapter();
   const queueService = new QueueService();
   const documentQueue = queueService.getDocumentQueue();
-  if (documentQueue) {
-    const serverAdapter = new FastifyAdapter();
-    createBullBoard({
-      queues: [new BullMQAdapter(documentQueue)],
-      serverAdapter,
-    });
-    serverAdapter.setBasePath('/admin/queues');
-    app.register(serverAdapter.registerPlugin());
-  }
+  createBullBoard({
+    queues: documentQueue ? [new BullMQAdapter(documentQueue) as any] : [],
+    serverAdapter,
+  });
+  serverAdapter.setBasePath('/admin/queues');
+  await app.register(serverAdapter.registerPlugin(), { prefix: '/admin/queues', basePath: '/admin/queues' });
+
 
   // Health check endpoint
   app.get('/health', async () => {
@@ -86,6 +90,23 @@ export async function buildServer() {
   await app.register(questionsRoutes, { prefix: '/api/v1' });
   await app.register(quizzesRoutes, { prefix: '/api/v1' });
   await app.register(analyticsRoutes, { prefix: '/api/v1' });
+  await app.register(syllabusRoutes, { prefix: '/api/v1' });
+
+  const uploadsDir = path.join(process.cwd(), 'uploads');
+  if (!fs.existsSync(uploadsDir)) {
+    fs.mkdirSync(uploadsDir, { recursive: true });
+  }
+
+  app.get('/uploads/:filename', async (request, reply) => {
+    const filename = path.basename((request.params as { filename: string }).filename);
+    const filePath = path.join(uploadsDir, filename);
+    if (!filename || !fs.existsSync(filePath)) {
+      return reply.status(404).send(formatErrorResponse('NOT_FOUND', 'File not found', request.id));
+    }
+    reply.type('application/pdf');
+    reply.header('Content-Disposition', `inline; filename="${filename}"`);
+    return reply.send(createReadStream(filePath));
+  });
 
   app.setErrorHandler((error, request, reply) => {
     // Structured JSON logging for production monitoring tools

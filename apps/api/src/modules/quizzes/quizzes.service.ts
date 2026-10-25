@@ -25,6 +25,10 @@ export class QuizzesService {
     });
 
     // 3. Save to database
+    if (!generated?.questions?.length) {
+      throw new Error('AI failed to generate quiz questions. Please try again.');
+    }
+
     return db.quiz.create({
       data: {
         courseId,
@@ -35,10 +39,10 @@ export class QuizzesService {
         timeLimitMinutes: input.timeLimitMinutes || null,
         questions: {
           create: generated.questions.map((q: any) => ({
-            content: q.content,
+            content: q.content || 'Question text unavailable',
             type: q.type as QuestionType,
-            options: q.options || undefined,
-            correctOption: q.correctOption,
+            options: q.options || [],
+            correctOption: q.correctOption || null,
             explanation: q.explanation,
             topic: q.topic || 'General',
             marks: q.marks || 1,
@@ -49,6 +53,7 @@ export class QuizzesService {
         questions: true,
       }
     });
+
   }
 
   async getQuizzes(courseId: string, userId: string) {
